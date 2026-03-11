@@ -1,0 +1,19 @@
+name = "MacroPower"
+uuid = "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e"
+authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
+version = "0.1.0"
+license = "MPL-2.0"
+
+[deps]
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+
+[compat]
+julia = "1.10"
+JSON3 = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
