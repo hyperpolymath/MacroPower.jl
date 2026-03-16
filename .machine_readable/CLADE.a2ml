@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Clade declaration — part of the gv-clade-index registry
+# See: https://github.com/hyperpolymath/gv-clade-index
+
+[identity]
+uuid = "c88fdfb4-f139-5a9b-bc63-b512383036e4"
+primary-forge = "github"
+primary-owner = "hyperpolymath"
+canonical-name = "MacroPower.jl"
+prefixed-name = "dx-MacroPower.jl"
+
+[clade]
+primary = "dx"
+secondary = []
+assigned = "2026-03-16"
+rationale = ""
+
+[forges]
+github = "hyperpolymath/MacroPower.jl"
+gitlab = "hyperpolymath/MacroPower.jl"
+bitbucket = "hyperpolymath/MacroPower.jl"
+
+[lineage]
+type = "standalone"
+parent = "Julia package — macro metaprogramming"
+born = "2026-03-16"
