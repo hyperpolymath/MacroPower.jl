@@ -1,32 +1,138 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
 = MacroPower.jl — Show Me The Receipts
+Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 :toc:
+:toclevels: 3
 :icons: font
 
-The README makes claims. This file backs them up.
+The README makes claims. This file backs them up with specific code locations,
+honest caveats, and enough trace information for an external reviewer to navigate
+the codebase cold.
 
-[quote, README]
+== Claim 1: Low-code automation tool — define Flows connecting events to actions
+
+[quote, README — Overview]
 ____
-MacroPower.jl is a low-code/no-code style automation tool for Julia. It allows you to define "Flows" that connect events (File System, HTTP, Time) to actions (Run Script, Send Alert, Database Write).
+MacroPower.jl is a low-code/no-code style automation tool for Julia. It allows
+you to define "Flows" that connect events (File System, HTTP, Time) to actions
+(Run Script, Send Alert, Database Write).
 ____
 
-== Technology Choices
+*How it works:* `src/MacroPower.jl` defines three composable structs:
 
-[cols="1,2"]
-|===
-| Technology | Learn More
+- `Trigger(name::String, check::Function)` — a named boolean predicate. The
+  `check` field is a zero-argument function returning `Bool`.
+- `Action(name::String, execute::Function)` — a named side-effecting closure.
+- `Workflow(name::String, triggers::Vector{Trigger}, actions::Vector{Action})`
+  — the top-level execution unit.
 
-| **Julia** | https://julialang.org
-|===
+`run_workflow(wf)` iterates over `wf.triggers`, calls `t.check()` on each, and
+when it returns `true`, iterates over `wf.actions` and calls `a.execute()`.
+This is a simple eager evaluation loop — no concurrency, no event loop.
+
+The `@workflow` macro provides a declarative surface syntax. The current
+implementation is a stub: it prints a message and returns an empty `Workflow`
+struct with no parsed triggers or actions from the block body.
+
+*Honest caveat:* The event source descriptions in the README (File System, HTTP,
+Time triggers; Send Alert, Database Write actions) are aspirational. The current
+implementation has no file-watching, no HTTP client, no scheduler, and no
+database connector. All triggers and actions must be supplied as plain Julia
+closures by the caller. The `@workflow` macro does not parse `when(...) -> ...`
+syntax from the block — that parsing is listed as a "to do" in the macro comment.
+
+== Claim 2: The `@workflow` macro for declarative workflow definition
+
+[quote, README — Quick Start]
+____
+flow = @workflow "Nightly Backup" begin
+  when(time_is("02:00")) -> backup_database()
+  when(file_changed("/tmp/data")) -> process_data()
+end
+____
+
+*How it works (current):* The `@workflow` macro in `src/MacroPower.jl` accepts
+a name expression and a block. It currently ignores the block contents and
+returns a `Workflow` with the given name and empty `Trigger[]`/`Action[]` vectors.
+The README syntax compiles without error because `when`, `time_is`, and
+`file_changed` are not called at compile time — but the resulting workflow has no
+triggers or actions.
+
+The struct-based API (constructing `Trigger` and `Action` directly and passing them
+to `Workflow(name, triggers, actions)`) is the fully working path today.
+
+*Honest caveat:* The `when(...) -> action` DSL shown in the README Quick Start is
+not parsed. At 20% completion (per the TOPOLOGY badge), the macro body parser is
+the primary missing piece.
+
+== How It Is Checked
+
+Tests live in `test/runtests.jl`. The source file is included directly to avoid
+package resolution. Coverage includes:
+
+- `Trigger` construction: name is a String, `check` is a Function, calling
+  `check()` returns the expected Bool
+- `Action` construction: name is a String, `execute` is a Function, calling
+  `execute()` returns the expected value
+- `Workflow` construction with one trigger and one action
+- `Workflow` with empty triggers and actions
+- `Workflow` with multiple triggers and actions — lengths are correct
+- `@workflow` macro: produces a `Workflow` instance, name matches, triggers
+  and actions are empty (stub behaviour is asserted, not hidden)
+- `run_workflow` with no-triggered workflow: no side effects
+- `run_workflow` with all-true triggers: all actions are executed and return
+  expected values
 
 == File Map
 
-[cols="1,2"]
+[cols="2,4"]
 |===
 | Path | What's There
 
-| `src/` | Source code
-| `test(s)/` | Test suite
+| `src/MacroPower.jl`
+| Entire module (~78 lines). `using Dates`. Defines `Trigger`, `Action`,
+  `Workflow`. Implements stub `@workflow` macro and `run_workflow` evaluation
+  loop.
+
+| `test/runtests.jl`
+| Full test suite (~80 lines). Includes source directly. Covers struct
+  construction, macro output, and workflow execution with various trigger
+  configurations.
+
+| `Project.toml`
+| Package identity. Depends on `Dates` (stdlib only).
+  PMPL-1.0-or-later declared.
+
+| `LICENSE` / `LICENSES/`
+| PMPL-1.0-or-later full text.
+|===
+
+== Dogfooded Across The Account
+
+[cols="2,4"]
+|===
+| Repo | How MacroPower (or this domain) appears
+
+| `Hyperpolymath.jl`
+| Listed under "Orchestration & Meta" in the umbrella metapackage
+  (`using MacroPower` in `src/Hyperpolymath.jl`).
+
+| `developer-ecosystem/julia-ecosystem/`
+| Part of the orchestration tier of the Julia ecosystem collection.
+
+| `ambientops`
+| Ambient operations automation (personal sysadmin, session management)
+  is the primary domain where workflow trigger-action automation is applied;
+  MacroPower is the Julia layer for expressing those workflows.
+
+| `gitbot-fleet`
+| Bot orchestration (rhodibot, echidnabot, sustainabot, etc.) follows the
+  same trigger-action composition pattern — MacroPower is the Julia-native
+  version of that pattern.
+
+| `infrastructure-automation`
+| Infrastructure automation scripts use trigger-action flows; MacroPower
+  is intended to provide a Julia DSL for expressing them.
 |===
 
 == Questions?
