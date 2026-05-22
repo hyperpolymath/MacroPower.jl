@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 = MacroPower.jl — Show Me The Receipts
 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 :toc:
@@ -101,10 +101,10 @@ package resolution. Coverage includes:
 
 | `Project.toml`
 | Package identity. Depends on `Dates` (stdlib only).
-  PMPL-1.0-or-later declared.
+  MPL-2.0 declared.
 
 | `LICENSE` / `LICENSES/`
-| PMPL-1.0-or-later full text.
+| MPL-2.0 full text.
 |===
 
 == Dogfooded Across The Account
