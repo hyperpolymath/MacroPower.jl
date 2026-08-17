@@ -1,0 +1,362 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+//
+// Proof Progress Snapshot — MacroPower.jl
+// Generated: 2026-08-14
+
+= MacroPower.jl — Proof/Verification Guarantee Progress Snapshot
+:toc:
+:icons: font
+
+This document provides an indicative state of progress on formal guarantees for
+the MacroPower.jl Julia package as of 2026-08-14. It consolidates information from:
+
+- `README.md` — Project overview and automation tool claims
+- `EXPLAINME.adoc` — Verification receipts and honest caveats
+- `src/MacroPower.jl` — Core workflow implementation
+- `test/runtests.jl` — Test suite
+
+== Headline Status
+
+[cols="1,2,3",options="header"]
+|===
+| Component | Status | Details
+
+| Low-code automation tool | 🟡 PARTIAL | Define Flows connecting events to actions — struct-based API works
+
+| Trigger type | ✅ COMPLETE | `Trigger(name::String, check::Function)` with Bool predicate
+
+| Action type | ✅ COMPLETE | `Action(name::String, execute::Function)` with side-effecting closure
+
+| Workflow type | ✅ COMPLETE | `Workflow(name, triggers, actions)` — top-level execution unit
+
+| run_workflow | ✅ COMPLETE | Iterates triggers, executes actions on true check
+
+| @workflow macro | ⚠️ STUB | Prints message, returns empty Workflow — does NOT parse block
+
+| File System events | ❌ NOT IMPLEMENTED | Described in README but not implemented
+
+| HTTP events | ❌ NOT IMPLEMENTED | Described in README but not implemented
+
+| Time triggers | ❌ NOT IMPLEMENTED | Described in README but not implemented
+
+| Run Script action | ❌ NOT IMPLEMENTED | Described in README but not implemented
+
+| Send Alert action | ❌ NOT IMPLEMENTED | Described in README but not implemented
+
+| Database Write action | ❌ NOT IMPLEMENTED | Described in README but not implemented
+
+| when(...) -> ... DSL | ❌ NOT IMPLEMENTED | Macro does not parse DSL syntax
+
+| time_is() function | ❌ NOT IMPLEMENTED | Described in README but not implemented
+
+| file_changed() function | ❌ NOT IMPLEMENTED | Described in README but not implemented
+
+| Concurrency | ❌ NOT IMPLEMENTED | Simple eager evaluation loop — no concurrency
+
+| Event loop | ❌ NOT IMPLEMENTED | No event loop implemented
+
+| Macro body parser | ❌ NOT IMPLEMENTED | Listed as "to do" in macro comment
+|===
+
+**Overall:** MacroPower.jl provides a **partially implemented** low-code automation
+tool. The struct-based API (directly constructing `Trigger`, `Action`, and `Workflow`)
+is fully working. The `@workflow` macro exists but is a stub that does not parse the
+DSL syntax shown in the README. Much of the README's event source and action
+descriptions are aspirational.
+
+**Honest Assessment:** At 20% completion (per TOPOLOGY badge), MacroPower.jl is an
+early prototype with the core data structures and execution loop working, but the
+declarative DSL and built-in event sources/actions are not yet implemented.
+
+== Current Implementation
+
+=== Core Data Structures
+
+`src/MacroPower.jl` defines three composable structs:
+
+**Trigger:**
+- Fields: `name::String`, `check::Function`
+- The `check` field is a zero-argument function returning `Bool`
+- Used to define boolean predicates that determine when actions should execute
+
+**Action:**
+- Fields: `name::String`, `execute::Function`
+- The `execute` field is a side-effecting closure
+- Used to define operations to perform when triggers fire
+
+**Workflow:**
+- Fields: `name::String`, `triggers::Vector{Trigger}`, `actions::Vector{Action}`
+- The top-level execution unit
+- Contains collections of triggers and actions
+
+=== Execution Model
+
+`run_workflow(wf)` implements a simple eager evaluation loop:
+
+1. Iterates over `wf.triggers`
+2. Calls `t.check()` on each trigger
+3. When `check()` returns `true`, iterates over `wf.actions`
+4. Calls `a.execute()` on each action
+
+**Characteristics:**
+- No concurrency — sequential execution
+- No event loop — direct function calls
+- Eager evaluation — all triggers checked on each run
+
+=== The @workflow Macro
+
+The `@workflow` macro provides a declarative surface syntax:
+
+[source,julia]
+----
+flow = @workflow "Nightly Backup" begin
+    when(time_is("02:00")) -> backup_database()
+    when(file_changed("/tmp/data")) -> process_data()
+end
+----
+
+**Current Implementation:**
+- Accepts a name expression and a block
+- Ignores the block contents
+- Returns a `Workflow` with the given name and empty `Trigger[]`/`Action[]` vectors
+- Does NOT parse `when(...) -> ...` syntax
+
+**Status:** Stub implementation — the README syntax compiles without error because
+`when`, `time_is`, and `file_changed` are not called at compile time, but the
+resulting workflow has no triggers or actions.
+
+== Test Evidence
+
+From EXPLAINME.adoc lines 72-80:
+
+Tests in `test/runtests.jl` verify:
+
+[cols="1,3,1",options="header"]
+|===
+| Test | Description | Status
+
+| Trigger construction | name is a String, check is a Function | ✅ PASS
+
+| Trigger execution | Calling check() returns expected Bool | ✅ PASS
+
+| Action construction | name is a String, execute is a Function | ✅ PASS
+
+| Action execution | Calling execute() returns expected value | ✅ PASS
+
+| Workflow construction | One trigger and one action | ✅ PASS
+
+| Empty workflow | Workflow with empty triggers and actions | ✅ PASS
+
+| Multiple triggers/actions | Lengths are correct | ✅ PASS
+
+| run_workflow | Executes actions when triggers fire | ✅ PASS
+|===
+
+== Formal Verification Status
+
+=== Current Formal Content
+
+[cols="1,3,1,1",options="header"]
+|===
+| Area | Formal Verification | Status | Evidence
+
+| Trigger construction | Type and field correctness | ✅ TESTED | Tests pass
+
+| Action construction | Type and field correctness | ✅ TESTED | Tests pass
+
+| Workflow construction | Type and field correctness | ✅ TESTED | Tests pass
+
+| run_workflow logic | Trigger check and action execution | ✅ TESTED | Tests pass
+
+| Multiple triggers | Correct iteration and execution | ✅ TESTED | Tests pass
+
+| Multiple actions | Correct iteration and execution | ✅ TESTED | Tests pass
+
+| DSL parsing | when(...) -> ... syntax | ❌ NOT IMPLEMENTED | Stub only
+
+| Event sources | File System, HTTP, Time | ❌ NOT IMPLEMENTED | Not implemented
+
+| Actions | Run Script, Send Alert, Database Write | ❌ NOT IMPLEMENTED | Not implemented
+|====
+
+=== Planned Formal Proofs
+
+Integration with Axiom.jl would enable:
+
+[source,julia]
+----
+using Axiom
+using MacroPower
+
+# Trigger properties
+@prove forall(t::Trigger) do isa(t.name, String) end
+@prove forall(t::Trigger) do isa(t.check, Function) end
+
+# Action properties
+@prove forall(a::Action) do isa(a.name, String) end
+@prove forall(a::Action) do isa(a.execute, Function) end
+
+# Workflow properties
+@prove forall(w::Workflow) do length(w.triggers) >= 0 end
+@prove forall(w::Workflow) do length(w.actions) >= 0 end
+
+# Execution properties
+@prove forall(w::Workflow) do 
+    # If no triggers fire, no actions execute
+    all(t -> !t.check(), w.triggers) => 
+    run_workflow(w) == nothing end
+
+@prove forall(w::Workflow) do 
+    # If a trigger fires, its corresponding actions execute
+    any(t -> t.check(), w.triggers) => 
+    # At least one action executes
+    true end  # Placeholder — actual proof needs execution tracking
+----
+
+== Aspirational Features
+
+The README describes features that are **not yet implemented**:
+
+=== Described but Not Implemented
+
+[cols="1,2,1",options="header"]
+|===
+| Feature | Description | Status
+
+| File System events | File watching for changes | ❌ NOT IMPLEMENTED
+
+| HTTP events | HTTP client for webhook triggers | ❌ NOT IMPLEMENTED
+
+| Time triggers | Scheduler for time-based triggers | ❌ NOT IMPLEMENTED
+
+| Run Script action | Script execution action | ❌ NOT IMPLEMENTED
+
+| Send Alert action | Alert notification action | ❌ NOT IMPLEMENTED
+
+| Database Write action | Database write action | ❌ NOT IMPLEMENTED
+
+| when(...) -> ... DSL | Declarative workflow syntax | ❌ NOT IMPLEMENTED
+
+| time_is() | Time checking function | ❌ NOT IMPLEMENTED
+
+| file_changed() | File change detection function | ❌ NOT IMPLEMENTED
+
+| Concurrency | Concurrent trigger checking | ❌ NOT IMPLEMENTED
+
+| Event loop | Asynchronous event processing | ❌ NOT IMPLEMENTED
+
+| Macro body parser | Parse when(...) -> ... syntax | ❌ NOT IMPLEMENTED
+|===
+
+=== Honest Caveats
+
+From EXPLAINME.adoc:
+
+. The event source descriptions in the README (File System, HTTP, Time triggers;
+  Send Alert, Database Write actions) are aspirational.
+
+. The current implementation has no file-watching, no HTTP client, no scheduler,
+  and no database connector.
+
+. All triggers and actions must be supplied as plain Julia closures by the caller.
+
+. The `@workflow` macro does not parse `when(...) -> ...` syntax from the block —
+  that parsing is listed as a "to do" in the macro comment.
+
+. At 20% completion (per the TOPOLOGY badge), the macro body parser is the
+  primary missing piece.
+
+. The README syntax compiles without error because `when`, `time_is`, and
+  `file_changed` are not called at compile time — but the resulting workflow has
+  no triggers or actions.
+
+. The struct-based API (constructing `Trigger` and `Action` directly and passing
+  them to `Workflow(name, triggers, actions)`) is the fully working path today.
+
+== Ecosystem Integration
+
+MacroPower.jl is designed to integrate with the Hyperpolymath automation ecosystem:
+
+[cols="1,2,1",options="header"]
+|===
+| Project | Connection | Status
+
+| Hyperpolymath ecosystem | Automation engine for the ecosystem | ✅ DESIGNED
+
+| Other Julia packages | Can use MacroPower for automation | 🟡 POTENTIAL
+
+| Axiom.jl | Formal verification framework | 🟡 PLANNED
+|===
+
+**Design Philosophy:**
+
+MacroPower.jl is the **Automation Engine for the Hyperpolymath Ecosystem**, designed
+to provide low-code/no-code automation capabilities. The current implementation
+is a foundation upon which the full automation suite will be built.
+
+== Current Status Summary
+
+[cols="1,2,1",options="header"]
+|===
+| Category | Description | Count/Status
+
+| Core data structures | Trigger, Action, Workflow | 3 types
+
+| Working API | Struct-based construction | ✅ COMPLETE
+
+| Macro DSL | @workflow macro | ⚠️ STUB
+
+| Event sources | File System, HTTP, Time | 0/3 implemented
+
+| Actions | Run Script, Send Alert, Database Write | 0/3 implemented
+
+| Passing tests | Core functionality tests | 8+ tests
+
+| Completion | Per TOPOLOGY badge | 20%
+
+| Completion | Actual functionality | ~30%
+|===
+
+== Outstanding Work
+
+=== Immediate Next Steps
+
+1. **Implement macro body parser**: Parse `when(...) -> ...` DSL syntax
+2. **Implement time_is()**: Add time checking function
+3. **Implement file_changed()**: Add file change detection
+4. **Implement event loop**: Add asynchronous event processing
+5. **Implement concurrency**: Add concurrent trigger checking
+6. **Implement Run Script action**: Add script execution capability
+7. **Implement Send Alert action**: Add alert notification
+8. **Implement Database Write action**: Add database write capability
+
+=== Medium-term Goals
+
+1. **File System events**: Add file watching for change detection
+2. **HTTP events**: Add HTTP client for webhook triggers
+3. **Time triggers**: Add scheduler for time-based automation
+4. **Complete DSL**: Full declarative workflow syntax
+5. **Error handling**: Robust error handling for actions
+6. **Logging**: Action execution logging
+
+=== Long-term Vision
+
+1. **Full automation engine**: Complete low-code/no-code automation tool
+2. **Ecosystem integration**: Integrated with all Hyperpolymath packages
+3. **Enterprise automation**: Production-ready automation capabilities
+4. **Safety-critical automation**: Certified automation for critical applications
+
+== References
+
+* https://github.com/hyperpolymath/Axiom.jl[Axiom.jl] — Formal verification framework
+
+== Document Information
+
+[cols="1,2"]
+|===
+| Generated | 2026-08-14 |
+| Author | Mistral Vibe (on behalf of Jonathan D.A. Jewell) |
+| Source | README.md, EXPLAINME.adoc, src/MacroPower.jl, test/runtests.jl |
+| Status | Snapshot — subject to change as implementation progresses |
+|===
